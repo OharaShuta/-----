@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>印象評価アンケート</title>
+    <style>
+        body { font-family: "Helvetica Neue", Arial, sans-serif; text-align: center; background-color: #f4f7f6; padding: 20px; color: #333; }
+        h2 { margin-bottom: 10px; }
+        p { line-height: 1.6; }
+        
+        .screen { display: none; width: 100%; margin: 0 auto; background: white; padding: 30px 10px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .active { display: block; }
+        
+        #start-screen, #break-screen, #device-screen, #finish-screen { max-width: 600px; }
+
+        button.btn-primary {
+            background-color: #007bff; color: white; border: none; padding: 15px 40px;
+            font-size: 18px; border-radius: 5px; cursor: pointer; margin-top: 30px;
+            transition: background 0.3s;
+        }
+        button.btn-primary:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        .container { 
+            display: flex; justify-content: center; gap: 20px; margin-top: 20px; 
+            flex-wrap: wrap; width: 100%; 
+        }
+        .image-card {
+            background: #fff; padding: 5px; border-radius: 8px; border: 2px solid #ddd;
+            cursor: pointer; transition: transform 0.2s, border-color 0.2s;
+            width: 48%; max-width: none; 
+        }
+        .image-card:hover { transform: scale(1.01); border-color: #007bff; box-shadow: 0 0 15px rgba(0,123,255,0.4); }
+        img { width: 100%; height: auto; border-radius: 4px; display: block; }
+        
+        .radio-group { text-align: left; margin: 20px auto; display: inline-block; }
+        .radio-item { margin: 10px 0; font-size: 16px; }
+        input[type="radio"] { transform: scale(1.2); margin-right: 10px; }
+
+        .progress { margin-top: 15px; font-size: 1.1em; color: #777; font-weight: bold;}
+        .category-badge {
+            background: #e9ecef; color: #495057; padding: 5px 15px; 
+            border-radius: 20px; font-size: 0.9em; font-weight: bold; margin-bottom: 10px; display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen" class="screen active">
+        <h2>アンケートご協力のお願い</h2>
+        <p>このアンケートでは、画像の印象について<br><strong>3つの異なる観点</strong>から比較評価をお願いします。</p>
+        <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #ffeeba;">
+            <p class="note">【重要】</p>
+            <p>PCやタブレットなど、画面の大きいデバイスで回答してください。</p>
+        </div>
+        <button class="btn-primary" onclick="startSurvey()">アンケートを開始する</button>
+    </div>
+
+    <div id="break-screen" class="screen">
+        <h2>次の項目へ進みます</h2>
+        <p>次は以下の観点で選んでください：</p>
+        <h3 id="next-category-title" style="color: #007bff; font-size: 1.5em;"></h3>
+        <p>準備ができたらボタンを押してください。</p>
+        <button class="btn-primary" onclick="startNextSection()">次へ</button>
+    </div>
+
+    <div id="quiz-screen" class="screen">
+        <span class="category-badge" id="category-badge">カテゴリ名</span>
+        <h2 id="question-text">どちらがより〇〇ですか？</h2>
+        <p>直感で画像をクリックしてください</p>
+        
+        <div class="container">
+            <div class="image-card" onclick="selectImage('A')">
+                <img id="imgA" src="" alt="画像A">
+            </div>
+            <div class="image-card" onclick="selectImage('B')">
+                <img id="imgB" src="" alt="画像B">
+            </div>
+        </div>
+        <p class="progress"><span id="current-count">0</span> / <span id="max-count">0</span> 問目</p>
+    </div>
+
+    <div id="device-screen" class="screen">
+        <h2>すべての比較が終了しました</h2>
+        <p>ご協力ありがとうございました。<br>最後に、現在回答に使用しているデバイスを教えてください。</p>
+        <div class="radio-group">
+            <div class="radio-item"><label><input type="radio" name="device" value="PC"> PC (ノート/デスクトップ)</label></div>
+            <div class="radio-item"><label><input type="radio" name="device" value="Tablet"> タブレット (iPadなど)</label></div>
+            <div class="radio-item"><label><input type="radio" name="device" value="Smartphone"> スマートフォン</label></div>
+            <div class="radio-item"><label><input type="radio" name="device" value="Other"> その他</label></div>
+        </div>
+        <br>
+        <button id="send-btn" class="btn-primary" onclick="submitDevice()" disabled>送信して終了</button>
+    </div>
+
+    <div id="finish-screen" class="screen">
+        <h2>送信完了</h2>
+        <p>データが正常に登録されました。<br>画面を閉じて終了してください。</p>
+        <p style="font-size:40px;">🙇‍♂️</p>
+    </div>
+
+    <script>
+        // ==========================================
+        // ▼ 設定エリア
+        // ==========================================
+        
+        // ★ここにGASのURLを貼り付ける
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzbTUKNskWjikudI7fJqFX2GZfgtjF7OdVcn9kKCsDQTPQS7vK-aNt5sOB9N6rw8vQcug/exec";
+        
+        // 画像フォルダのパス
+        const imagePath = "kenkyu/1/";
+
+        // 画像リスト
+        const imageList = [
+            "1100.png", "2300.png", "9500.png", "19000.png",
+            "38000.png", "75000.png", "150000.png", "300000.png",
+            "600000.png", "1200000.png", "2400000.png", "4600000.png",
+            "8800000.png", "15000000.png", "25000000.png", "origin38000000.png"
+        ];
+        
+        // 1つの項目あたりの質問数
+        const maxQuestionsPerCategory = 10; 
+
+        // 評価項目の設定（ここを変えれば項目を増やせます）
+        const stages = [
+            { id: "uncanny", label: "不気味・恐怖", question: "どちらが「より不気味」ですか？" },
+            { id: "disgust", label: "不快・嫌悪",   question: "どちらが「より不快」ですか？" },
+            { id: "affinity", label: "親和感・好感", question: "どちらに「より好感」を持てますか？" }
+        ];
+
+        // ==========================================
+        // ▲ 設定ここまで
+        // ==========================================
+
+        let currentStageIndex = 0; // 今どの項目をやっているか
+        let currentCount = 0;
+        const userId = "user_" + Math.random().toString(36).substr(2, 9);
+        let currentPair = {};
+
+        window.onload = function() {
+            document.getElementById("max-count").textContent = maxQuestionsPerCategory;
+            
+            const radios = document.getElementsByName("device");
+            for(let radio of radios) {
+                radio.addEventListener('change', function() {
+                    document.getElementById("send-btn").disabled = false;
+                });
+            }
+        };
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // 最初の開始ボタン
+        function startSurvey() {
+            // 最初のステージの準備
+            setupStage(0);
+            showScreen('quiz-screen');
+            showNextPair();
+        }
+
+        // 次のセクションへの切り替え画面を表示
+        function showBreakScreen() {
+            const nextStage = stages[currentStageIndex];
+            document.getElementById("next-category-title").textContent = `「${nextStage.label}」`;
+            showScreen('break-screen');
+        }
+
+        // 休憩画面から次へ進むボタン
+        function startNextSection() {
+            setupStage(currentStageIndex);
+            showScreen('quiz-screen');
+            showNextPair();
+        }
+
+        // ステージ情報のセット
+        function setupStage(index) {
+            const stage = stages[index];
+            document.getElementById("category-badge").textContent = `現在のテーマ：${stage.label}`;
+            document.getElementById("question-text").textContent = stage.question;
+            currentCount = 0;
+            document.getElementById("current-count").textContent = 0;
+        }
+
+        // 次のペアを表示
+        function showNextPair() {
+            // 現在のステージの規定回数が終わったら
+            if (currentCount >= maxQuestionsPerCategory) {
+                currentStageIndex++; // 次のステージへ
+
+                if (currentStageIndex < stages.length) {
+                    // まだ次の項目がある場合 -> 休憩画面へ
+                    showBreakScreen();
+                } else {
+                    // 全部の項目が終わった場合 -> デバイス確認へ
+                    showScreen('device-screen');
+                }
+                return;
+            }
+
+            let idx1 = Math.floor(Math.random() * imageList.length);
+            let idx2 = Math.floor(Math.random() * imageList.length);
+            while (idx1 === idx2) {
+                idx2 = Math.floor(Math.random() * imageList.length);
+            }
+
+            currentPair = { fileA: imageList[idx1], fileB: imageList[idx2] };
+
+            document.getElementById("imgA").src = imagePath + currentPair.fileA;
+            document.getElementById("imgB").src = imagePath + currentPair.fileB;
+
+            currentCount++;
+            document.getElementById("current-count").textContent = currentCount;
+        }
+
+        // 画像選択時の送信
+        function selectImage(choice) {
+            const winnerFile = (choice === 'A') ? currentPair.fileA : currentPair.fileB;
+            const currentStage = stages[currentStageIndex];
+            
+            fetch(GAS_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({
+                    type: "comparison",
+                    userId: userId,
+                    category: currentStage.id, // 現在のカテゴリ(uncanny, disgust等)を送る
+                    imgA: currentPair.fileA,
+                    imgB: currentPair.fileB,
+                    winner: winnerFile
+                })
+            });
+
+            showNextPair();
+        }
+
+        // デバイス情報の送信
+        function submitDevice() {
+            const radios = document.getElementsByName("device");
+            let selectedDevice = "";
+            for(let radio of radios) {
+                if(radio.checked) {
+                    selectedDevice = radio.value;
+                    break;
+                }
+            }
+            if (selectedDevice === "") {
+                alert("デバイスを選択してください");
+                return;
+            }
+
+            const btn = document.getElementById("send-btn");
+            btn.disabled = true;
+            btn.textContent = "送信中...";
+
+            fetch(GAS_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({
+                    type: "device",
+                    userId: userId,
+                    device: selectedDevice
+                })
+            }).then(() => {
+                showScreen('finish-screen');
+            }).catch(() => {
+                alert("送信に失敗しました");
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
