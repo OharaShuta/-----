@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>順位付けアンケート（記号表示版）</title>
+    <style>
+        /* ベース設定 */
+        body { font-family: "Helvetica Neue", Arial, sans-serif; text-align: center; background-color: #f0f2f5; margin: 0; padding: 0; color: #333; }
+        h2 { margin: 10px 0; font-size: 1.5rem; }
+        
+        /* 全画面コンテナ */
+        .screen { 
+            display: none; 
+            width: 99%; 
+            margin: 10px auto; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            box-sizing: border-box;
+        }
+        .active { display: block; }
+
+        /* レイアウト */
+        .workspace {
+            display: flex; 
+            flex-direction: row; 
+            gap: 0; 
+            text-align: left;
+            align-items: stretch;
+            height: 85vh; 
+        }
+
+        /* エリア共通 */
+        .area-box {
+            background: #fff; 
+            border: 2px solid #ddd; 
+            border-radius: 8px; 
+            padding: 10px;
+            box-sizing: border-box;
+            overflow-y: auto; 
+            height: 100%;     
+        }
+        .area-header {
+            font-weight: bold; padding: 10px; background: #eee; border-radius: 5px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem;
+            position: sticky; top: 0; z-index: 20;
+        }
+
+        /* ■リサイズハンドル */
+        #resize-handle {
+            width: 15px;
+            background-color: #e0e0e0;
+            cursor: col-resize;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: background 0.2s; user-select: none; z-index: 100;
+        }
+        #resize-handle:hover, #resize-handle.dragging { background-color: #007bff; }
+        #resize-handle::after { content: "||"; color: #888; font-weight: bold; font-size: 12px; }
+
+        /* ■画像リストエリア（左側） */
+        #source-area { width: 60%; background-color: #fafafa; }
+
+        /* ■ランキングエリア（右側） */
+        #ranking-area { width: 40%; border-color: #007bff; background-color: #f0f7ff; }
+
+        /* スマホ対応 */
+        @media (max-width: 900px) {
+            .workspace { flex-direction: column-reverse; height: auto; }
+            #source-area, #ranking-area { width: 100% !important; height: auto; min-height: 400px; }
+            #resize-handle { display: none; }
+            .area-header { position: static; }
+        }
+
+        /* 画像リストのグリッド */
+        .source-grid { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
+        .source-item {
+            width: calc(33% - 15px);
+            cursor: pointer; border: 4px solid transparent; border-radius: 8px; overflow: hidden;
+            transition: transform 0.1s; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            position: relative; background: #000;
+        }
+        @media (max-width: 1400px) { .source-item { width: calc(50% - 10px); } }
+        .source-item:hover { transform: scale(1.02); border-color: #28a745; z-index: 10; }
+        .source-item img { width: 100%; display: block; height: auto; }
+        
+        /* ラベル（ID）の表示スタイル */
+        .img-label {
+            position: absolute; top: 0; left: 0; 
+            background: rgba(0, 0, 0, 0.7); color: #fff;
+            padding: 5px 10px; font-weight: bold; font-size: 1.2rem;
+            border-bottom-right-radius: 8px; pointer-events: none;
+        }
+        
+        .add-hint {
+            position: absolute; bottom: 0; right: 0; background: rgba(40, 167, 69, 0.95); color: white;
+            padding: 8px 15px; font-size: 1rem; border-top-left-radius: 10px; font-weight: bold;
+        }
+
+        /* ランキングリスト */
+        .rank-list { display: flex; flex-direction: column; gap: 10px; }
+        .rank-item {
+            display: flex; align-items: center; background: white; padding: 10px;
+            border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer; transition: background 0.2s; border: 2px solid transparent;
+        }
+        .rank-item:hover { border-color: #007bff; background-color: #fffde7; }
+        
+        .rank-number {
+            font-size: 2.5rem; font-weight: bold; color: #007bff; width: 60px; text-align: center; flex-shrink: 0;
+            text-shadow: 2px 2px 0 #fff; margin-right: 10px;
+        }
+        
+        .rank-thumb {
+            width: 45%; 
+            min-width: 120px; max-width: 600px;
+            height: auto; 
+            border-radius: 4px; margin-right: 15px; border: 1px solid #ccc;
+            object-fit: contain;
+        }
+
+        .rank-info { 
+            font-size: 1.5rem; color: #333; font-weight: bold; /* IDを大きく表示 */
+            flex-grow: 1; min-width: 0;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+
+        .move-hint { 
+            margin-top: 5px; align-self: flex-start;
+            font-size: 0.85rem; color: #555; border: 1px solid #ccc; font-weight: normal;
+            padding: 5px 10px; border-radius: 5px; background: #fff; white-space: nowrap; 
+        }
+
+        /* モーダル */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
+        .modal-content {
+            background-color: white; margin: 15vh auto; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .rank-select { padding: 10px; font-size: 1.5rem; width: 120px; text-align: center; border-radius: 5px; border: 2px solid #007bff; }
+
+        button.btn-primary {
+            background-color: #007bff; color: white; border: none; padding: 20px 50px;
+            font-size: 1.2rem; border-radius: 50px; cursor: pointer; margin-top: 20px;
+            transition: background 0.3s; width: 100%; max-width: 600px;
+        }
+        button.btn-primary:hover { background-color: #0056b3; transform: scale(1.02); }
+        button.btn-primary:disabled { background-color: #ccc; cursor: not-allowed; transform: none; }
+        
+        button.btn-cancel { background-color: #6c757d; margin-top: 15px; padding: 12px 30px; border-radius: 5px; color: white; border:none; font-size: 1rem; cursor: pointer; }
+
+        .category-badge {
+            background: #343a40; color: #fff; padding: 8px 20px; 
+            border-radius: 30px; font-size: 1rem; font-weight: bold; margin-bottom: 15px; display: inline-block;
+        }
+        .narrow-container { max-width: 800px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen" class="screen active">
+        <div class="narrow-container">
+            <h2>順位付けアンケート</h2>
+            <div style="text-align: left; background: #e9ecef; padding: 20px; border-radius: 10px; margin: 30px 0; font-size: 1.1rem;">
+                <strong>操作方法：</strong>
+                <ol style="line-height: 1.8;">
+                    <li>下のリストから画像をクリックして「ランキング」に追加します。</li>
+                    <li>ランキング内の画像をクリックすると、<strong>順位を変更（移動）</strong>できます。</li>
+                    <li>全ての画像をランキングに入れたら次へ進めます。</li>
+                </ol>
+            <div style="font-size:0.9em; color:#d9534f; margin-top:5px;">
+                ※画面サイズを最大化し、細部まで確認して順位を決めてください。
+            </div>
+            </div>
+            <button class="btn-primary" onclick="startSurvey()">アンケートを開始</button>
+        </div>
+    </div>
+
+    <div id="work-screen" class="screen">
+        <span class="category-badge" id="category-badge">テーマ</span>
+        <h2 id="question-text">テーマに沿って選んでください</h2>
+
+        <div class="workspace" id="workspace">
+            
+            <div class="area-box" id="source-area">
+                <div class="area-header">
+                    <span>📷 画像リスト</span>
+                </div>
+                <div id="source-grid" class="source-grid"></div>
+            </div>
+
+            <div id="resize-handle" title="ドラッグして幅を調整"></div>
+
+            <div class="area-box" id="ranking-area">
+                <div class="area-header">
+                    <span>🏆 ランキング（<span id="rank-count">0</span> / 10）</span>
+                </div>
+                <div id="rank-list" class="rank-list">
+                    <div style="padding: 40px 20px; text-align: center; color: #999; border: 2px dashed #ccc; border-radius: 10px;">
+                        左のリストから<br>画像を選んでください
+                    </div>
+                </div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <button id="next-btn" class="btn-primary" onclick="finishCurrentStage()" disabled style="font-size: 1rem; padding: 15px;">
+                        全ての画像を並べたら次へ
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="device-screen" class="screen">
+        <div class="narrow-container">
+            <h2>すべて終了しました</h2>
+            <p>最後に、使用したデバイスを教えてください。</p>
+            <div style="text-align: left; display: inline-block; margin: 30px; font-size: 1.2rem;">
+                <div style="margin: 10px;"><label><input type="radio" name="device" value="PC"> PC (マウス操作)</label></div>
+                <div style="margin: 10px;"><label><input type="radio" name="device" value="Tablet"> タブレット</label></div>
+                <div style="margin: 10px;"><label><input type="radio" name="device" value="Smartphone"> スマートフォン</label></div>
+            </div>
+            <br>
+            <button id="send-btn" class="btn-primary" onclick="submitAll()">送信して終了</button>
+        </div>
+    </div>
+
+    <div id="finish-screen" class="screen">
+        <div class="narrow-container" style="padding: 50px;">
+            <h2>送信完了</h2>
+            <p style="font-size: 1.2rem;">ご協力ありがとうございました。</p>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h3>順位の変更</h3>
+            <p>この画像 (<span id="modal-label" style="font-weight:bold;"></span>) を何位に移動しますか？</p>
+            <p>
+                <select id="rank-select" class="rank-select"></select> 位へ
+            </p>
+            <button class="btn-primary" onclick="confirmMove()">移動する</button>
+            <br>
+            <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+            <br><br>
+            <button class="btn-cancel" style="background:#dc3545; font-size: 0.9rem;" onclick="removeImage()">リストに戻す（削除）</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // ▼ 設定エリア
+        // ==========================================
+        
+        // ★GASのURLを貼り付ける
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzbTUKNskWjikudI7fJqFX2GZfgtjF7OdVcn9kKCsDQTPQS7vK-aNt5sOB9N6rw8vQcug/exec";
+
+        const imagePath = "kenkyu/1/";
+        // 厳選したリスト
+        const imageList = [
+            "1100.png", "2300.png","4700.png", "9500.png", "19000.png",
+            "38000.png", "75000.png", "150000.png", "300000.png",
+            "600000.png", "1200000.png", "2400000.png"
+        ];
+
+        const stages = [
+            { id: "uncanny", label: "不気味・恐怖", question: "「恐怖」を強く感じる順に並べてください(1位=最も怖い)" },
+            { id: "disgust", label: "不快・嫌悪",   question: "「不快感」を強く感じる順に並べてください(1位=最も不快)" },
+            { id: "affinity", label: "親和感・好感", question: "「好感」を持てる順に並べてください(1位=最も好感)" }
+        ];
+
+        // ==========================================
+        // ▲ 設定ここまで
+        // ==========================================
+
+        let currentStageIndex = 0;
+        const userId = "user_" + Math.random().toString(36).substr(2, 9);
+        
+        let sourceImages = []; 
+        let rankedImages = []; 
+        let selectedRankIndex = -1; 
+        
+        // 画像ごとのランダムラベル（A, B, C...）を保持するオブジェクト
+        let imageLabels = {};
+
+        // 初期化時にラベルを生成
+        window.onload = function() {
+            generateLabels();
+        };
+
+        function generateLabels() {
+            // アルファベットリストを作成
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+            // シャッフル
+            chars.sort(() => Math.random() - 0.5);
+            
+            imageLabels = {};
+            imageList.forEach((filename, index) => {
+                // 画像ごとに一意の文字を割り当て
+                imageLabels[filename] = chars[index];
+            });
+        }
+
+        // リサイズ機能
+        const handle = document.getElementById('resize-handle');
+        const sourceArea = document.getElementById('source-area');
+        const rankingArea = document.getElementById('ranking-area');
+        const workspace = document.getElementById('workspace');
+        let isResizing = false;
+
+        handle.addEventListener('mousedown', function(e) {
+            isResizing = true;
+            handle.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isResizing) return;
+            const containerRect = workspace.getBoundingClientRect();
+            const x = e.clientX - containerRect.left;
+            let percentage = (x / containerRect.width) * 100;
+
+            if (percentage < 15) percentage = 15;
+            if (percentage > 85) percentage = 85;
+
+            sourceArea.style.width = percentage + '%';
+            rankingArea.style.width = (100 - percentage) + '%';
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isResizing) {
+                isResizing = false;
+                handle.classList.remove('dragging');
+                document.body.style.cursor = 'default';
+                document.body.style.userSelect = '';
+            }
+        });
+
+        // アンケートロジック
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        function startSurvey() {
+            setupStage(0);
+        }
+
+        function setupStage(index) {
+            currentStageIndex = index;
+            const stage = stages[index];
+            document.getElementById("category-badge").textContent = `現在のテーマ：${stage.label}`;
+            document.getElementById("question-text").textContent = stage.question;
+
+            sourceImages = [...imageList].sort(() => Math.random() - 0.5);
+            rankedImages = [];
+            renderWorkspace();
+            showScreen('work-screen');
+        }
+
+        function renderWorkspace() {
+            const sourceGrid = document.getElementById("source-grid");
+            const rankList = document.getElementById("rank-list");
+            const rankCount = document.getElementById("rank-count");
+            const nextBtn = document.getElementById("next-btn");
+
+            // 画像リスト描画
+            sourceGrid.innerHTML = "";
+            sourceImages.forEach((filename, index) => {
+                const label = imageLabels[filename]; // ランダムIDを取得
+                const div = document.createElement("div");
+                div.className = "source-item";
+                div.onclick = () => selectImage(index);
+                div.innerHTML = `
+                    <div class="img-label">${label}</div>
+                    <img src="${imagePath + filename}" alt="Image">
+                    <span class="add-hint">＋追加</span>
+                `;
+                sourceGrid.appendChild(div);
+            });
+
+            // ランキング描画
+            rankList.innerHTML = "";
+            if (rankedImages.length === 0) {
+                rankList.innerHTML = `<div style="padding: 40px; text-align: center; color: #999; border: 2px dashed #ccc; border-radius: 10px;">左のリストから<br>画像を選んでください</div>`;
+            } else {
+                rankedImages.forEach((filename, index) => {
+                    const label = imageLabels[filename]; // ランダムIDを取得
+                    const div = document.createElement("div");
+                    div.className = "rank-item";
+                    div.onclick = () => openReorderModal(index);
+                    div.innerHTML = `
+                        <div class="rank-number">#${index + 1}</div>
+                        <img src="${imagePath + filename}" class="rank-thumb">
+                        <div class="rank-info">
+                            <div>ID: ${label}</div>
+                            <div class="move-hint">クリックで順位変更</div>
+                        </div>
+                    `;
+                    rankList.appendChild(div);
+                });
+            }
+
+            rankCount.textContent = rankedImages.length;
+            if (sourceImages.length === 0) {
+                nextBtn.disabled = false;
+                nextBtn.textContent = "この順位で決定して次へ";
+                nextBtn.style.backgroundColor = "#28a745";
+            } else {
+                nextBtn.disabled = true;
+                nextBtn.textContent = `あと ${sourceImages.length} 枚残っています`;
+                nextBtn.style.backgroundColor = "#6c757d";
+            }
+        }
+
+        function selectImage(sourceIndex) {
+            const img = sourceImages[sourceIndex];
+            sourceImages.splice(sourceIndex, 1); 
+            rankedImages.push(img); 
+            renderWorkspace();
+            
+            const areaBox = document.getElementById("ranking-area");
+            setTimeout(() => {
+                areaBox.scrollTop = areaBox.scrollHeight;
+            }, 50);
+        }
+
+        function openReorderModal(index) {
+            selectedRankIndex = index;
+            const filename = rankedImages[index];
+            const label = imageLabels[filename];
+            
+            // モーダル内のID表示を更新
+            document.getElementById("modal-label").innerText = label;
+
+            const modal = document.getElementById("modal");
+            const select = document.getElementById("rank-select");
+            select.innerHTML = "";
+            for(let i=1; i<=rankedImages.length; i++) {
+                const option = document.createElement("option");
+                option.value = i - 1; 
+                option.text = `${i} 位`;
+                if (i - 1 === index) option.selected = true;
+                select.appendChild(option);
+            }
+            modal.style.display = "block";
+        }
+
+        function confirmMove() {
+            const select = document.getElementById("rank-select");
+            const newIndex = parseInt(select.value);
+            if (selectedRankIndex !== newIndex) {
+                const item = rankedImages.splice(selectedRankIndex, 1)[0]; 
+                rankedImages.splice(newIndex, 0, item); 
+            }
+            closeModal();
+            renderWorkspace();
+        }
+
+        function removeImage() {
+            const item = rankedImages.splice(selectedRankIndex, 1)[0];
+            sourceImages.push(item);
+            closeModal();
+            renderWorkspace();
+        }
+
+        function closeModal() {
+            document.getElementById("modal").style.display = "none";
+        }
+
+        function finishCurrentStage() {
+            const stage = stages[currentStageIndex];
+            fetch(GAS_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({
+                    type: "ranking",
+                    userId: userId,
+                    category: stage.id,
+                    ranking: rankedImages,
+                    device: "unknown"
+                })
+            });
+
+            if (currentStageIndex + 1 < stages.length) {
+                setTimeout(() => {
+                    alert("記録しました。次のテーマへ進みます。");
+                    setupStage(currentStageIndex + 1);
+                }, 100);
+            } else {
+                showScreen('device-screen');
+            }
+        }
+
+        function submitAll() {
+            const radios = document.getElementsByName("device");
+            let selectedDevice = "";
+            for(let radio of radios) {
+                if(radio.checked) {
+                    selectedDevice = radio.value;
+                    break;
+                }
+            }
+            if (selectedDevice === "") {
+                alert("デバイスを選択してください");
+                return;
+            }
+
+            const btn = document.getElementById("send-btn");
+            btn.disabled = true;
+            btn.textContent = "送信中...";
+
+            fetch(GAS_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({
+                    type: "ranking",
+                    userId: userId,
+                    category: "device_info", 
+                    ranking: [],
+                    device: selectedDevice
+                })
+            }).then(() => {
+                showScreen('finish-screen');
+            }).catch(() => {
+                alert("送信失敗");
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
