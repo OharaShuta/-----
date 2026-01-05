@@ -29,7 +29,7 @@
             gap: 0; 
             text-align: left;
             align-items: stretch;
-            height: 85vh; 
+            height: 80vh; /* 説明文が入る分少し高さを減らす */
         }
 
         /* エリア共通 */
@@ -48,24 +48,18 @@
             position: sticky; top: 0; z-index: 20;
         }
 
-        /* ■リサイズハンドル */
+        /* リサイズハンドル */
         #resize-handle {
-            width: 15px;
-            background-color: #e0e0e0;
-            cursor: col-resize;
+            width: 15px; background-color: #e0e0e0; cursor: col-resize;
             display: flex; align-items: center; justify-content: center;
             flex-shrink: 0; transition: background 0.2s; user-select: none; z-index: 100;
         }
         #resize-handle:hover, #resize-handle.dragging { background-color: #007bff; }
         #resize-handle::after { content: "||"; color: #888; font-weight: bold; font-size: 12px; }
 
-        /* ■画像リストエリア（左側） */
         #source-area { width: 60%; background-color: #fafafa; }
-
-        /* ■ランキングエリア（右側） */
         #ranking-area { width: 40%; border-color: #007bff; background-color: #f0f7ff; }
 
-        /* スマホ対応 */
         @media (max-width: 900px) {
             .workspace { flex-direction: column-reverse; height: auto; }
             #source-area, #ranking-area { width: 100% !important; height: auto; min-height: 400px; }
@@ -73,7 +67,6 @@
             .area-header { position: static; }
         }
 
-        /* 画像リストのグリッド */
         .source-grid { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
         .source-item {
             width: calc(33% - 15px);
@@ -85,20 +78,17 @@
         .source-item:hover { transform: scale(1.02); border-color: #28a745; z-index: 10; }
         .source-item img { width: 100%; display: block; height: auto; }
         
-        /* ラベル（ID）の表示スタイル */
         .img-label {
             position: absolute; top: 0; left: 0; 
             background: rgba(0, 0, 0, 0.7); color: #fff;
             padding: 5px 10px; font-weight: bold; font-size: 1.2rem;
             border-bottom-right-radius: 8px; pointer-events: none;
         }
-        
         .add-hint {
             position: absolute; bottom: 0; right: 0; background: rgba(40, 167, 69, 0.95); color: white;
             padding: 8px 15px; font-size: 1rem; border-top-left-radius: 10px; font-weight: bold;
         }
 
-        /* ランキングリスト */
         .rank-list { display: flex; flex-direction: column; gap: 10px; }
         .rank-item {
             display: flex; align-items: center; background: white; padding: 10px;
@@ -111,28 +101,29 @@
             font-size: 2.5rem; font-weight: bold; color: #007bff; width: 60px; text-align: center; flex-shrink: 0;
             text-shadow: 2px 2px 0 #fff; margin-right: 10px;
         }
-        
         .rank-thumb {
-            width: 45%; 
-            min-width: 120px; max-width: 600px;
-            height: auto; 
-            border-radius: 4px; margin-right: 15px; border: 1px solid #ccc;
-            object-fit: contain;
+            width: 45%; min-width: 120px; max-width: 600px; height: auto; 
+            border-radius: 4px; margin-right: 15px; border: 1px solid #ccc; object-fit: contain;
         }
-
         .rank-info { 
-            font-size: 1.5rem; color: #333; font-weight: bold; /* IDを大きく表示 */
-            flex-grow: 1; min-width: 0;
-            display: flex; flex-direction: column; justify-content: center;
+            font-size: 1.5rem; color: #333; font-weight: bold; 
+            flex-grow: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;
         }
-
         .move-hint { 
             margin-top: 5px; align-self: flex-start;
             font-size: 0.85rem; color: #555; border: 1px solid #ccc; font-weight: normal;
             padding: 5px 10px; border-radius: 5px; background: #fff; white-space: nowrap; 
         }
 
-        /* モーダル */
+        /* ▼▼▼ 追加：説明文のデザイン ▼▼▼ */
+        .instruction-box {
+            background-color: #e3f2fd; border-left: 5px solid #2196F3;
+            padding: 15px; text-align: left; margin: 10px 0 20px 0; border-radius: 4px;
+        }
+        .instruction-title { font-weight: bold; color: #0d47a1; margin-bottom: 5px; display: block; font-size: 1.1rem; }
+        .instruction-text { font-size: 0.95rem; color: #333; line-height: 1.5; }
+        /* ▲▲▲ 追加ここまで ▲▲▲ */
+
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
         .modal-content {
             background-color: white; margin: 15vh auto; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center;
@@ -147,12 +138,11 @@
         }
         button.btn-primary:hover { background-color: #0056b3; transform: scale(1.02); }
         button.btn-primary:disabled { background-color: #ccc; cursor: not-allowed; transform: none; }
-        
         button.btn-cancel { background-color: #6c757d; margin-top: 15px; padding: 12px 30px; border-radius: 5px; color: white; border:none; font-size: 1rem; cursor: pointer; }
 
         .category-badge {
             background: #343a40; color: #fff; padding: 8px 20px; 
-            border-radius: 30px; font-size: 1rem; font-weight: bold; margin-bottom: 15px; display: inline-block;
+            border-radius: 30px; font-size: 1rem; font-weight: bold; margin-bottom: 10px; display: inline-block;
         }
         .narrow-container { max-width: 800px; margin: 0 auto; }
     </style>
@@ -161,15 +151,20 @@
 
     <div id="start-screen" class="screen active">
         <div class="narrow-container">
-            <h2>印象評価順位付けアンケート</h2>
+            <h2>印象評価アンケート</h2>
             <div style="text-align: left; background: #e9ecef; padding: 20px; border-radius: 10px; margin: 30px 0; font-size: 1.1rem;">
+                <strong>はじめに：</strong>
+                <p>それぞれの画面に<strong>「どういう視点で選んでほしいか」</strong>の説明を書いています</p>
+                <p>説明文をよく読んでから順位付けをお願いします。</p>
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
                 <strong>操作方法：</strong>
                 <ol style="line-height: 1.8;">
-                    <li>下のリストから画像をクリックして「ランキング」に追加します。</li>
+                    <li>画像にはランダムな<strong>「ID（記号）」</strong>が振られています。</li>
+                    <li>中央の「縦棒」をドラッグして、見やすい広さに調整してください。</li>
+                    <li>リストから画像を選び、ランキングに追加・並べ替えを行ってください。</li>
                     <li>ランキング内の画像をクリックすると、<strong>順位を変更（移動）</strong>できます。</li>
-                    <li>全ての画像をランキングに入れたら次へ進めます。</li>
                 </ol>
-            <div style="font-size:0.9em; color:#d9534f; margin-top:5px;">
+                <div style="font-size:0.9em; color:#d9534f; margin-top:5px;">
                 ※画面サイズを最大化し、細部まで確認して順位を決めてください。
             </div>
             </div>
@@ -179,35 +174,28 @@
 
     <div id="work-screen" class="screen">
         <span class="category-badge" id="category-badge">テーマ</span>
-        <h2 id="question-text">テーマに沿って選んでください</h2>
-
+        
+        <div class="instruction-box">
+            <span class="instruction-title" id="instruction-title">評価のポイント</span>
+            <span class="instruction-text" id="instruction-text">ここに説明文が表示されます</span>
+        </div>
         <div class="workspace" id="workspace">
-            
             <div class="area-box" id="source-area">
-                <div class="area-header">
-                    <span>📷 画像リスト</span>
-                </div>
+                <div class="area-header"><span>📷 画像リスト</span></div>
                 <div id="source-grid" class="source-grid"></div>
             </div>
 
-            <div id="resize-handle" title="ドラッグして幅を調整"></div>
+            <div id="resize-handle"></div>
 
             <div class="area-box" id="ranking-area">
-                <div class="area-header">
-                    <span>🏆 ランキング（<span id="rank-count">0</span> / 10）</span>
-                </div>
+                <div class="area-header"><span>🏆 ランキング（<span id="rank-count">0</span> / 10）</span></div>
                 <div id="rank-list" class="rank-list">
-                    <div style="padding: 40px 20px; text-align: center; color: #999; border: 2px dashed #ccc; border-radius: 10px;">
-                        左のリストから<br>画像を選んでください
-                    </div>
+                    <div style="padding: 40px 20px; text-align: center; color: #999; border: 2px dashed #ccc; border-radius: 10px;">左のリストから<br>画像を選んでください</div>
                 </div>
                 <div style="margin-top: 20px; text-align: center;">
-                    <button id="next-btn" class="btn-primary" onclick="finishCurrentStage()" disabled style="font-size: 1rem; padding: 15px;">
-                        全ての画像を並べたら次へ
-                    </button>
+                    <button id="next-btn" class="btn-primary" onclick="finishCurrentStage()" disabled style="font-size: 1rem; padding: 15px;">全ての画像を並べたら次へ</button>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -236,14 +224,10 @@
         <div class="modal-content">
             <h3>順位の変更</h3>
             <p>この画像 (<span id="modal-label" style="font-weight:bold;"></span>) を何位に移動しますか？</p>
-            <p>
-                <select id="rank-select" class="rank-select"></select> 位へ
-            </p>
+            <p><select id="rank-select" class="rank-select"></select> 位へ</p>
             <button class="btn-primary" onclick="confirmMove()">移動する</button>
-            <br>
-            <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
-            <br><br>
-            <button class="btn-cancel" style="background:#dc3545; font-size: 0.9rem;" onclick="removeImage()">リストに戻す（削除）</button>
+            <br><button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+            <br><br><button class="btn-cancel" style="background:#dc3545; font-size: 0.9rem;" onclick="removeImage()">リストに戻す（削除）</button>
         </div>
     </div>
 
@@ -256,17 +240,32 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzbTUKNskWjikudI7fJqFX2GZfgtjF7OdVcn9kKCsDQTPQS7vK-aNt5sOB9N6rw8vQcug/exec";
 
         const imagePath = "kenkyu/1/";
-        // 厳選したリスト
         const imageList = [
             "1100.png", "2300.png","4700.png", "9500.png", "19000.png",
             "38000.png", "75000.png", "150000.png", "300000.png",
             "600000.png", "1200000.png", "2400000.png"
         ];
 
+        // ▼▼▼ 説明文(description)を追加しました ▼▼▼
         const stages = [
-            { id: "uncanny", label: "不気味・恐怖", question: "「恐怖」を強く感じる順に並べてください(1位=最も怖い)" },
-            { id: "disgust", label: "不快・嫌悪",   question: "「不快感」を強く感じる順に並べてください(1位=最も不快)" },
-            { id: "affinity", label: "親和感・好感", question: "「好感」を持てる順に並べてください(1位=最も好感)" }
+            { 
+                id: "uncanny", 
+                label: "不気味・恐怖", 
+                title: "「不気味さ」を感じる順に並べてください",
+                description: "<strong>【どういう意味？】</strong><br>「怖い」「ゾッとする」「この世のものとは思えない」と感じる度合いです。<br>夜道で出会ったら逃げ出したくなるような感覚を基準にしてください。"
+            },
+            { 
+                id: "disgust", 
+                label: "不快・嫌悪", 
+                title: "「不快感」を感じる順に並べてください",
+                description: "<strong>【どういう意味？】</strong><br>「気持ち悪い」「目を背けたい」「生理的に受け付けない」と感じる度合いです。<br>汚いものや、腐ったものを見たときのような『拒絶反応』を基準にしてください。"
+            },
+            { 
+                id: "affinity", 
+                label: "親和感・好感", 
+                title: "「好感」を持てる順に並べてください",
+                description: "<strong>【どういう意味？】</strong><br>「親しみやすい」「安心する」「友達になれそう」と感じる度合いです。<br>画像の画質ではなく、キャラクターとしての『心の距離の近さ』を基準にしてください。"
+            }
         ];
 
         // ==========================================
@@ -275,33 +274,22 @@
 
         let currentStageIndex = 0;
         const userId = "user_" + Math.random().toString(36).substr(2, 9);
-        
         let sourceImages = []; 
         let rankedImages = []; 
         let selectedRankIndex = -1; 
-        
-        // 画像ごとのランダムラベル（A, B, C...）を保持するオブジェクト
         let imageLabels = {};
 
-        // 初期化時にラベルを生成
-        window.onload = function() {
-            generateLabels();
-        };
+        window.onload = function() { generateLabels(); };
 
         function generateLabels() {
-            // アルファベットリストを作成
             const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-            // シャッフル
             chars.sort(() => Math.random() - 0.5);
-            
             imageLabels = {};
             imageList.forEach((filename, index) => {
-                // 画像ごとに一意の文字を割り当て
                 imageLabels[filename] = chars[index];
             });
         }
 
-        // リサイズ機能
         const handle = document.getElementById('resize-handle');
         const sourceArea = document.getElementById('source-area');
         const rankingArea = document.getElementById('ranking-area');
@@ -320,10 +308,8 @@
             const containerRect = workspace.getBoundingClientRect();
             const x = e.clientX - containerRect.left;
             let percentage = (x / containerRect.width) * 100;
-
             if (percentage < 15) percentage = 15;
             if (percentage > 85) percentage = 85;
-
             sourceArea.style.width = percentage + '%';
             rankingArea.style.width = (100 - percentage) + '%';
         });
@@ -337,7 +323,6 @@
             }
         });
 
-        // アンケートロジック
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -351,8 +336,12 @@
         function setupStage(index) {
             currentStageIndex = index;
             const stage = stages[index];
+            
+            // ラベル更新
             document.getElementById("category-badge").textContent = `現在のテーマ：${stage.label}`;
-            document.getElementById("question-text").textContent = stage.question;
+            // 説明文の更新（JSでHTMLタグとして挿入）
+            document.getElementById("instruction-title").textContent = stage.title;
+            document.getElementById("instruction-text").innerHTML = stage.description;
 
             sourceImages = [...imageList].sort(() => Math.random() - 0.5);
             rankedImages = [];
@@ -366,38 +355,29 @@
             const rankCount = document.getElementById("rank-count");
             const nextBtn = document.getElementById("next-btn");
 
-            // 画像リスト描画
             sourceGrid.innerHTML = "";
             sourceImages.forEach((filename, index) => {
-                const label = imageLabels[filename]; // ランダムIDを取得
+                const label = imageLabels[filename];
                 const div = document.createElement("div");
                 div.className = "source-item";
                 div.onclick = () => selectImage(index);
-                div.innerHTML = `
-                    <div class="img-label">${label}</div>
-                    <img src="${imagePath + filename}" alt="Image">
-                    <span class="add-hint">＋追加</span>
-                `;
+                div.innerHTML = `<div class="img-label">${label}</div><img src="${imagePath + filename}" alt="Image"><span class="add-hint">＋追加</span>`;
                 sourceGrid.appendChild(div);
             });
 
-            // ランキング描画
             rankList.innerHTML = "";
             if (rankedImages.length === 0) {
                 rankList.innerHTML = `<div style="padding: 40px; text-align: center; color: #999; border: 2px dashed #ccc; border-radius: 10px;">左のリストから<br>画像を選んでください</div>`;
             } else {
                 rankedImages.forEach((filename, index) => {
-                    const label = imageLabels[filename]; // ランダムIDを取得
+                    const label = imageLabels[filename];
                     const div = document.createElement("div");
                     div.className = "rank-item";
                     div.onclick = () => openReorderModal(index);
                     div.innerHTML = `
                         <div class="rank-number">#${index + 1}</div>
                         <img src="${imagePath + filename}" class="rank-thumb">
-                        <div class="rank-info">
-                            <div>ID: ${label}</div>
-                            <div class="move-hint">クリックで順位変更</div>
-                        </div>
+                        <div class="rank-info"><div>ID: ${label}</div><div class="move-hint">クリックで順位変更</div></div>
                     `;
                     rankList.appendChild(div);
                 });
@@ -420,21 +400,15 @@
             sourceImages.splice(sourceIndex, 1); 
             rankedImages.push(img); 
             renderWorkspace();
-            
             const areaBox = document.getElementById("ranking-area");
-            setTimeout(() => {
-                areaBox.scrollTop = areaBox.scrollHeight;
-            }, 50);
+            setTimeout(() => { areaBox.scrollTop = areaBox.scrollHeight; }, 50);
         }
 
         function openReorderModal(index) {
             selectedRankIndex = index;
             const filename = rankedImages[index];
             const label = imageLabels[filename];
-            
-            // モーダル内のID表示を更新
             document.getElementById("modal-label").innerText = label;
-
             const modal = document.getElementById("modal");
             const select = document.getElementById("rank-select");
             select.innerHTML = "";
@@ -508,7 +482,6 @@
                 alert("デバイスを選択してください");
                 return;
             }
-
             const btn = document.getElementById("send-btn");
             btn.disabled = true;
             btn.textContent = "送信中...";
