@@ -193,12 +193,12 @@
         };
 
         // スライダーの色を変える演出（-50〜+50用）
-function getGradient(val) {
-    // -50(青) -> 0(灰) -> +50(赤)
-    // 値に50を足すだけで 0% 〜 100% になります
-    const percent = parseInt(val) + 50; 
-    return `linear-gradient(90deg, #d9534f ${percent}%, #ddd ${percent}%)`;
-}
+        function getGradient(val) {
+            // -50(青) -> 0(灰) -> +50(赤)
+            // 値に50を足すだけで 0% 〜 100% になります
+            const percent = parseInt(val) + 50; 
+            return `linear-gradient(90deg, #d9534f ${percent}%, #ddd ${percent}%)`;
+        }
 
         function showDeviceCheck() {
             document.getElementById("survey-screen").style.display = "none";
@@ -227,9 +227,32 @@ function getGradient(val) {
                 const imgName = card.getAttribute("data-img");
                 const inputs = card.getElementsByTagName("input"); 
                 
+                function submitAll() {
+            const radios = document.getElementsByName("device");
+            let selectedDevice = "";
+            for(let radio of radios) {
+                if(radio.checked) {
+                    selectedDevice = radio.value;
+                    break;
+                }
+            }
+            if (selectedDevice === "") {
+                alert("デバイスを選択してください");
+                return;
+            }
+
+            const answers = [];
+            const cards = document.getElementsByClassName("card-inputs");
+            
+            for (let card of cards) {
+                const imgName = card.getAttribute("data-img");
+                const inputs = card.getElementsByTagName("input"); 
+                
                 answers.push({
                     img: imgName,
-                    u: inputs[0].value // uncanny
+                    u: inputs[0].value, // ユーザーが入力した値
+                    d: 0, // ダミーデータ（不快）
+                    a: 0  // ダミーデータ（好感）
                 });
             }
 
@@ -242,11 +265,19 @@ function getGradient(val) {
                 mode: "no-cors",
                 headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({
-                    type: "rating_simple", // 簡易版のタイプ名にしました
+                    type: "rating", // ★ここを "rating" に戻すとシート3に入ります
                     userId: userId,
                     answers: answers,
                     device: selectedDevice
                 })
+            }).then(() => {
+                document.getElementById("device-screen").style.display = "none";
+                document.getElementById("finish-screen").style.display = "block";
+            }).catch(() => {
+                alert("送信失敗");
+                btn.disabled = false;
+            });
+        }
             }).then(() => {
                 document.getElementById("device-screen").style.display = "none";
                 document.getElementById("finish-screen").style.display = "block";
