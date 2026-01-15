@@ -32,7 +32,7 @@
         }
         .card-image img { 
             max-width: 100%; height: auto; border-radius: 4px; 
-            max-height: 500px; /* 縦長になりすぎないように制限 */
+            max-height: 500px; 
             object-fit: contain;
             transition: transform 0.2s;
         }
@@ -46,10 +46,10 @@
         .slider-group { margin-bottom: 10px; }
         .slider-label { 
             font-weight: bold; font-size: 1.1em; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; 
-            color: #d9534f; /* 恐怖っぽい赤色 */
+            color: #d9534f; /* 赤色 */
         }
         .slider-value { 
-            color: #d9534f; font-weight: bold; font-size: 1.4em; width: 50px; text-align: right; 
+            color: #d9534f; font-weight: bold; font-size: 1.4em; width: 60px; text-align: right; 
         }
         
         /* スライダー本体 */
@@ -66,7 +66,7 @@
             display: flex; justify-content: space-between; font-size: 0.85em; color: #666; font-weight: bold;
         }
 
-        /* ID表示（隠し味） */
+        /* ID表示 */
         .img-id { font-size: 0.8rem; color: #ccc; margin-bottom: 5px; }
 
         /* ボタン */
@@ -86,7 +86,7 @@
 <body>
 
     <div id="survey-screen" class="screen active">
-        <h2>画像の印象評価</h2>
+        <h2>画像の印象評価（絶対評価）</h2>
         <div style="background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
             <strong>評価基準：不気味さ・恐怖感</strong><br>
             表示される画像を見て、どれくらい<strong>「不気味だ」「怖い」</strong>と感じるかをスライダーで評価してください。<br>
@@ -95,6 +95,7 @@
                 <li><strong>0</strong>： どちらでもない</li>
                 <li><strong>+50</strong>： 非常に不気味 / 強い恐怖を感じる</li>
             </ul>
+            <strong>※できるだけ大きな画面で解答してください</strong>
         </div>
 
         <div id="rating-list"></div>
@@ -129,7 +130,7 @@
         // ▼ 設定エリア
         // ==========================================
         
-        // ★GASのURLを貼り付ける
+        // ★ここにGASのURLを貼り付ける
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzbTUKNskWjikudI7fJqFX2GZfgtjF7OdVcn9kKCsDQTPQS7vK-aNt5sOB9N6rw8vQcug/exec";
 
         // 画像パス
@@ -192,10 +193,10 @@
             });
         };
 
-        // スライダーの色を変える演出（-50〜+50用）
+        // スライダーの色を変える演出（-50〜+50対応版）
         function getGradient(val) {
             // -50(青) -> 0(灰) -> +50(赤)
-            // 値に50を足すだけで 0% 〜 100% になります
+            // 値に50を足すと 0 ～ 100 になる
             const percent = parseInt(val) + 50; 
             return `linear-gradient(90deg, #d9534f ${percent}%, #ddd ${percent}%)`;
         }
@@ -227,32 +228,11 @@
                 const imgName = card.getAttribute("data-img");
                 const inputs = card.getElementsByTagName("input"); 
                 
-                function submitAll() {
-            const radios = document.getElementsByName("device");
-            let selectedDevice = "";
-            for(let radio of radios) {
-                if(radio.checked) {
-                    selectedDevice = radio.value;
-                    break;
-                }
-            }
-            if (selectedDevice === "") {
-                alert("デバイスを選択してください");
-                return;
-            }
-
-            const answers = [];
-            const cards = document.getElementsByClassName("card-inputs");
-            
-            for (let card of cards) {
-                const imgName = card.getAttribute("data-img");
-                const inputs = card.getElementsByTagName("input"); 
-                
                 answers.push({
                     img: imgName,
-                    u: inputs[0].value, // ユーザーが入力した値
-                    d: 0, // ダミーデータ（不快）
-                    a: 0  // ダミーデータ（好感）
+                    u: inputs[0].value, // Uncanny（不気味）の値
+                    d: 0, // Disgust（不快）は0で送る
+                    a: 0  // Affinity（好感）は0で送る
                 });
             }
 
@@ -265,19 +245,11 @@
                 mode: "no-cors",
                 headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({
-                    type: "rating", // ★ここを "rating" に戻すとシート3に入ります
+                    type: "rating", // シート3に送るため "rating" を指定
                     userId: userId,
                     answers: answers,
                     device: selectedDevice
                 })
-            }).then(() => {
-                document.getElementById("device-screen").style.display = "none";
-                document.getElementById("finish-screen").style.display = "block";
-            }).catch(() => {
-                alert("送信失敗");
-                btn.disabled = false;
-            });
-        }
             }).then(() => {
                 document.getElementById("device-screen").style.display = "none";
                 document.getElementById("finish-screen").style.display = "block";
