@@ -192,12 +192,13 @@
             });
         };
 
-        // スライダーの色を変える演出（視覚的にわかりやすく）
-        function getGradient(val) {
-            // -10(青) -> 0(灰) -> +10(赤) 
-            const percent = (parseInt(val) + 10) * 5; // 0% to 100%
-            return `linear-gradient(90deg, #d9534f ${percent}%, #ddd ${percent}%)`;
-        }
+        // スライダーの色を変える演出（-50〜+50用）
+function getGradient(val) {
+    // -50(青) -> 0(灰) -> +50(赤)
+    // 値に50を足すだけで 0% 〜 100% になります
+    const percent = parseInt(val) + 50; 
+    return `linear-gradient(90deg, #d9534f ${percent}%, #ddd ${percent}%)`;
+}
 
         function showDeviceCheck() {
             document.getElementById("survey-screen").style.display = "none";
