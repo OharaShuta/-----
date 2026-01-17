@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>印象評価アンケート</title>
+    <title>印象評価アンケート（不気味さ）</title>
     <style>
         /* ベース設定 */
         body { font-family: "Helvetica Neue", Arial, sans-serif; text-align: center; background-color: #f0f2f5; margin: 0; padding: 0; color: #333; }
@@ -44,27 +44,29 @@
         
         /* スライダーのデザイン */
         .slider-group { margin-bottom: 10px; }
+        
         .slider-label { 
-            font-weight: bold; font-size: 1.1em; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; 
-            color: #d9534f; /* 赤色 */
+            font-weight: bold; font-size: 1.2em; margin-bottom: 15px; 
+            color: #d9534f; text-align: center; /* 中央寄せに変更 */
         }
-        .slider-value { 
-            color: #d9534f; font-weight: bold; font-size: 1.4em; width: 60px; text-align: right; 
-        }
+        
+        /* 数値表示（.slider-value）は削除しました */
         
         /* スライダー本体 */
         input[type=range] { 
             width: 100%; margin: 10px 0; cursor: pointer; 
-            height: 10px; border-radius: 5px; background: #ddd; outline: none; appearance: none;
+            height: 12px; border-radius: 6px; background: #ddd; outline: none; appearance: none;
         }
         input[type=range]::-webkit-slider-thumb {
-            appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #d9534f; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #fff; cursor: pointer; border: 4px solid #d9534f; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* 目盛りガイド */
+        /* 目盛りガイド（文字を大きく強調） */
         .scale-guide {
-            display: flex; justify-content: space-between; font-size: 0.85em; color: #666; font-weight: bold;
+            display: flex; justify-content: space-between; font-size: 0.95em; color: #555; font-weight: bold; margin-top: 5px;
         }
+        .scale-left { color: #007bff; } /* 青色 */
+        .scale-right { color: #d9534f; } /* 赤色 */
 
         /* ID表示 */
         .img-id { font-size: 0.8rem; color: #ccc; margin-bottom: 5px; }
@@ -89,13 +91,13 @@
         <h2>画像の印象評価（絶対評価）</h2>
         <div style="background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
             <strong>評価基準：不気味さ・恐怖感</strong><br>
-            表示される画像を見て、どれくらい<strong>「不気味だ」「怖い」</strong>と感じるかをスライダーで評価してください。<br>
+            表示される画像を見て、直感的に<strong>「不気味だ」「怖い」</strong>と感じる度合いをスライダーで動かしてください。<br>
+            （数値は表示されません。バーの位置と色で判断してください）
             <ul style="margin: 5px 0 0 20px; font-size: 0.95em; color: #555;">
-                <li><strong>-50</strong>： 全く怖くない / 何も感じない</li>
-                <li><strong>0</strong>： どちらでもない</li>
-                <li><strong>+50</strong>： 非常に不気味 / 強い恐怖を感じる</li>
+                <li><strong>左側（青）</strong>： 全く怖くない / 何も感じない</li>
+                <li><strong>中央（灰）</strong>： どちらでもない</li>
+                <li><strong>右側（赤）</strong>： 非常に不気味 / 強い恐怖を感じる</li>
             </ul>
-            <strong>※できるだけ大きな画面で解答してください</strong>
         </div>
 
         <div id="rating-list"></div>
@@ -138,7 +140,7 @@
 
         // 選定した12枚の画像リスト
         const imageList = [
-            "1200.png", "4700.png", "19000.png", "76000.png", "300000.png", "1200000.png"
+            "1200.png", "4700.png", "19000.png", "76000.png", "300000.png", "1200000.png",
         ];
 
         // ==========================================
@@ -176,14 +178,16 @@
                         
                         <div class="slider-group">
                             <div class="slider-label">
-                                👻 不気味・恐怖度 <span class="slider-value" id="val-${index}">0</span>
+                                👻 不気味・恐怖度
                             </div>
+                            
                             <input type="range" min="-50" max="50" value="0" 
-                                oninput="document.getElementById('val-${index}').innerText = (this.value > 0 ? '+' : '') + this.value; this.style.background = getGradient(this.value);">
+                                oninput="this.style.background = getGradient(this.value);">
+                            
                             <div class="scale-guide">
-                                <span>-50 (怖くない)</span>
-                                <span>0</span>
-                                <span>+50 (非常に怖い)</span>
+                                <span class="scale-left">◀ 全く怖くない</span>
+                                <span style="color:#ccc;">●</span>
+                                <span class="scale-right">非常に不気味 ▶</span>
                             </div>
                         </div>
 
@@ -196,7 +200,6 @@
         // スライダーの色を変える演出（-50〜+50対応版）
         function getGradient(val) {
             // -50(青) -> 0(灰) -> +50(赤)
-            // 値に50を足すと 0 ～ 100 になる
             const percent = parseInt(val) + 50; 
             return `linear-gradient(90deg, #d9534f ${percent}%, #ddd ${percent}%)`;
         }
@@ -230,9 +233,9 @@
                 
                 answers.push({
                     img: imgName,
-                    u: inputs[0].value, // Uncanny（不気味）の値
-                    d: 0, // Disgust（不快）は0で送る
-                    a: 0  // Affinity（好感）は0で送る
+                    u: inputs[0].value, // ユーザーには見えないが値は取得できる
+                    d: 0, 
+                    a: 0 
                 });
             }
 
@@ -245,7 +248,7 @@
                 mode: "no-cors",
                 headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({
-                    type: "rating", // シート3に送るため "rating" を指定
+                    type: "rating", 
                     userId: userId,
                     answers: answers,
                     device: selectedDevice
